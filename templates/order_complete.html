@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}주문 완료 - NULL MARKET{% endblock %}
+{% block content %}
+<div class="complete">
+  <h1>주문이 완료되었어요 🎉</h1>
+  <p>주문번호 <strong>#{{ order.id }}</strong></p>
+  <p>{{ order.receiver }} 님 · {{ order.address }}</p>
+  <p>결제금액 <strong>{{ "{:,}".format(order.total_price) }}</strong>원</p>
+  <a href="{{ url_for('shop.order_detail', order_id=order.id) }}" class="btn btn-primary">주문 상세 보기</a>
+  <a href="/" class="btn">쇼핑 계속하기</a>
+</div>
+{% endblock %}

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}NULL MARKET{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/shop.css') }}">
+</head>
+<body>
+    <header class="site-header">
+        <a href="/" class="logo">NULL MARKET</a>
+        <nav>
+            <a href="/">상품</a>
+            {% if session.get('user_id') %}
+                <a href="{{ url_for('shop.cart') }}">장바구니</a>
+                <a href="{{ url_for('shop.mypage') }}">마이페이지</a>
+                <a href="{{ url_for('logout') }}">로그아웃</a>
+            {% else %}
+                <a href="{{ url_for('login_page') }}">로그인</a>
+                <a href="{{ url_for('signup_page') }}">회원가입</a>
+            {% endif %}
+        </nav>
+    </header>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

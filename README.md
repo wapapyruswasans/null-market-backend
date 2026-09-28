@@ -39,3 +39,19 @@ http://127.0.0.1:5000/login
 ## 브랜치 규칙
 - `main` - 안정 버전
 - `feature/기능명` - 새 기능 개발
+
+## 장바구니 / 주문 / 마이페이지 (feature/cart-order-mypage)
+- `shop.py` - 장바구니·주문·마이페이지 라우트 (Blueprint)
+- `templates/base.html` - 공통 레이아웃 (헤더/네비). 새 페이지는 `{% extends "base.html" %}` 로 작성
+- `static/css/shop.css`, `static/js/cart.js`
+- 상품 페이지에서 담기 버튼: `static/js/add-to-cart.js` 의 `addToCart(상품id, 사이즈)` 호출
+
+| URL | 설명 |
+|---|---|
+| `/cart` | 장바구니 |
+| `/cart/add` (POST JSON) | 담기 `{product_id, size, quantity}` |
+| `/order` | 주문서 → 결제 → `/order/<id>/complete` |
+| `/mypage` | 내 정보 + 주문 내역 |
+| `/mypage/orders/<id>` | 주문 상세 |
+
+※ DB 테이블이 추가되었으므로 pull 후 `python db.py` 를 한 번 다시 실행하세요.

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}주문서 - NULL MARKET{% endblock %}
+{% block content %}
+<h1>주문서</h1>
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+<h2>주문 상품</h2>
+<ul class="order-items">
+  {% for it in items %}
+  <li>
+    <span>{{ it.name }} ({{ it.size }}) × {{ it.quantity }}</span>
+    <strong>{{ "{:,}".format(it.subtotal) }}원</strong>
+  </li>
+  {% endfor %}
+</ul>
+
+<h2>배송 정보</h2>
+<form method="post" class="form">
+  <label>받는 사람 <input name="receiver" required></label>
+  <label>연락처 <input name="phone" type="tel" placeholder="010-0000-0000" required></label>
+  <label>주소 <input name="address" required></label>
+
+  <div class="summary">
+    <p>총 결제금액 <strong>{{ "{:,}".format(total) }}</strong>원</p>
+    <button type="submit" class="btn btn-primary">결제하기</button>
+  </div>
+</form>
+{% endblock %}

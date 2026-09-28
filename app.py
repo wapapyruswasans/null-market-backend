@@ -3,6 +3,7 @@ from flask import Flask, render_template, request, session, redirect, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
 from db import get_db
 from functools import wraps
+from shop import shop_bp   # 장바구니 / 주문 / 마이페이지
 
 def login_required(f):
     @wraps(f)
@@ -14,6 +15,7 @@ def login_required(f):
 
 app = Flask(__name__)
 app.secret_key = 'dev-secret-key-change-later'
+app.register_blueprint(shop_bp)   # /cart, /order, /mypage
 
 @app.route('/login')
 def login_page():
@@ -38,7 +40,7 @@ def login():
     session['user_id'] = user['id']
     session['username'] = user['username']
 
-    return f"{user['name']}님, 로그인 성공"
+    return redirect(url_for('shop.mypage'))
 
 @app.route('/signup')
 def signup_page():
@@ -71,26 +73,7 @@ def signup():
     except sqlite3.IntegrityError:
         return "이미 존재하는 아이디 또는 이메일입니다", 400
 
-    return f"{name}님, 회원가입 완료"
-
-@app.route('/mypage')
-@login_required
-def mypage():
-    conn = get_db()
-    user = conn.execute(
-        "SELECT * FROM users WHERE id = ?",
-        (session['user_id'],)
-    ).fetchone()
-    conn.close()
-
-    return f"""
-    <h2>마이페이지</h2>
-    <p>아이디: {user['username']}</p>
-    <p>이름: {user['name']}</p>
-    <p>이메일: {user['email']}</p>
-    <p>가입일: {user['created_at']}</p>
-    <a href="/logout">로그아웃</a>
-    """
+    return redirect(url_for('login_page'))
 
 @app.route('/logout')
 def logout():
