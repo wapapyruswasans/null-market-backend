@@ -9,6 +9,8 @@ def get_db():
 
 def init_db():
     conn = get_db()
+
+    # ---------- 유저 ----------
     conn.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,7 +22,7 @@ def init_db():
         )
     ''')
 
-    # ---------- 상품 (상품 목록 담당이 컬럼을 늘려도 됨. id/name/price/image 는 유지) ----------
+    # ---------- 상품 ----------
     conn.execute('''
         CREATE TABLE IF NOT EXISTS products (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -66,7 +68,44 @@ def init_db():
         )
     ''')
 
-    # 테스트용 샘플 상품 (상품이 하나도 없을 때만 넣음)
+    # ---------- 태그 ----------
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS tags (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL
+        )
+    ''')
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS product_tags (
+            product_id INTEGER NOT NULL,
+            tag_id INTEGER NOT NULL,
+            PRIMARY KEY (product_id, tag_id)
+        )
+    ''')
+
+    # ---------- 사용자 프로필 (추천용) ----------
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS user_profiles (
+            user_id INTEGER PRIMARY KEY,
+            height INTEGER,
+            weight INTEGER,
+            preferred_tags TEXT,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # ---------- 찜 목록 (추천용) ----------
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS wishlists (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            product_id INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, product_id)
+        )
+    ''')
+
+    # ---------- 샘플 상품 (상품이 하나도 없을 때만) ----------
     if conn.execute("SELECT COUNT(*) FROM products").fetchone()[0] == 0:
         conn.executemany(
             "INSERT INTO products (name, price, image) VALUES (?, ?, ?)",
@@ -74,6 +113,36 @@ def init_db():
              ("와이드 데님 팬츠", 49000, None),
              ("베이직 반팔 티셔츠", 19000, None)]
         )
+
+    # ---------- 태그 마스터 데이터 (한 번만) ----------
+    tags = [
+        "color-black", "color-white", "color-red", "color-blue",
+        "color-green", "color-yellow", "color-pink", "color-gray", "color-beige",
+        "style-casual", "style-formal", "style-sporty", "style-minimal",
+        "style-street", "style-vintage",
+        "type-shirt", "type-hoodie", "type-pants", "type-skirt",
+        "type-dress", "type-jacket", "type-coat", "type-shoes", "type-bag",
+        "season-spring", "season-summer", "season-fall", "season-winter", "season-all",
+        "fit-oversize", "fit-slim", "fit-regular", "fit-wide",
+        "gender-men", "gender-women", "gender-unisex",
+    ]
+    conn.executemany(
+        "INSERT OR IGNORE INTO tags (name) VALUES (?)",
+        [(t,) for t in tags]
+    )
+
+    # ---------- 샘플 상품에 태그 달기 ----------
+    tag_map = {
+        "오버핏 후드티": ["color-black", "style-casual", "type-hoodie", "season-fall", "fit-oversize", "gender-unisex"],
+        "와이드 데님 팬츠": ["color-blue", "style-casual", "type-pants", "season-all", "fit-wide", "gender-unisex"],
+        "베이직 반팔 티셔츠": ["color-white", "style-minimal", "type-shirt", "season-summer", "fit-regular", "gender-unisex"],
+    }
+    for p in conn.execute("SELECT id, name FROM products").fetchall():
+        for tag_name in tag_map.get(p['name'], []):
+            conn.execute('''
+                INSERT OR IGNORE INTO product_tags (product_id, tag_id)
+                SELECT ?, id FROM tags WHERE name = ?
+            ''', (p['id'], tag_name))
 
     conn.commit()
     conn.close()

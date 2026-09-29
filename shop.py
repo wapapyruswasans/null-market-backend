@@ -1,7 +1,8 @@
 """
-장바구니 / 주문 / 마이페이지  (담당: 장바구니·주문·마이페이지 파트)
+장바구니 / 주문 / 마이페이지 / 프로필  (담당: 장바구니·주문·마이페이지 파트)
 app.py 에서  from shop import shop_bp / app.register_blueprint(shop_bp)  로 연결됨
 """
+import sqlite3
 from functools import wraps
 from flask import (Blueprint, render_template, request, redirect,
                    url_for, session, jsonify, abort)
@@ -10,7 +11,7 @@ from db import get_db
 shop_bp = Blueprint('shop', __name__)
 
 
-# ---------- 로그인 체크 (app.py 의 login_required 와 동일, fetch 요청이면 JSON 으로 응답) ----------
+# ---------- 로그인 체크 ----------
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -61,7 +62,6 @@ def cart_add():
         conn.close()
         return jsonify(ok=False, msg='없는 상품입니다'), 404
 
-    # 같은 상품+사이즈가 이미 있으면 수량만 더함
     conn.execute('''
         INSERT INTO cart_items (user_id, product_id, size, quantity)
         VALUES (?, ?, ?, ?)
@@ -137,13 +137,12 @@ def order():
     ''', (user_id, total, receiver, phone, address))
     order_id = cur.lastrowid
 
-    # 주문 시점의 상품명/가격을 복사해 둠 (나중에 상품 가격이 바뀌어도 주문 내역은 그대로)
     conn.executemany('''
         INSERT INTO order_items (order_id, product_id, name, price, size, quantity)
         VALUES (?, ?, ?, ?, ?, ?)
     ''', [(order_id, r['product_id'], r['name'], r['price'], r['size'], r['quantity']) for r in items])
 
-    conn.execute("DELETE FROM cart_items WHERE user_id = ?", (user_id,))   # 장바구니 비우기
+    conn.execute("DELETE FROM cart_items WHERE user_id = ?", (user_id,))
     conn.commit()
     conn.close()
     return redirect(url_for('shop.order_complete', order_id=order_id))
@@ -193,5 +192,146 @@ def _get_my_order(conn, order_id):
                      (order_id, session['user_id'])).fetchone()
     if o is None:
         conn.close()
-        abort(404)   # 남의 주문은 못 봄
+        abort(404)
     return o
+
+# ======================================================
+#  찜 목록
+# ======================================================
+@shop_bp.route('/wishlist')
+@login_required
+def wishlist():
+    conn = get_db()
+    items = conn.execute('''
+        SELECT w.id, w.product_id, w.created_at,
+               p.name, p.price, p.image
+        FROM wishlists w
+        JOIN products p ON p.id = w.product_id
+        WHERE w.user_id = ?
+        ORDER BY w.id DESC
+    ''', (session['user_id'],)).fetchall()
+    conn.close()
+    return render_template('wishlist.html', items=items)
+
+
+@shop_bp.route('/wishlist/add', methods=['POST'])
+@login_required
+def wishlist_add():
+    data = request.get_json(silent=True) or request.form
+    product_id = int(data.get('product_id', 0))
+
+    conn = get_db()
+    if conn.execute("SELECT id FROM products WHERE id = ?", (product_id,)).fetchone() is None:
+        conn.close()
+        return jsonify(ok=False, msg='없는 상품입니다'), 404
+
+    try:
+        conn.execute(
+            "INSERT INTO wishlists (user_id, product_id) VALUES (?, ?)",
+            (session['user_id'], product_id)
+        )
+        conn.commit()
+    except sqlite3.IntegrityError:
+        conn.close()
+        return jsonify(ok=False, msg='이미 찜한 상품입니다'), 400
+
+    count = conn.execute("SELECT COUNT(*) FROM wishlists WHERE user_id = ?",
+                         (session['user_id'],)).fetchone()[0]
+    conn.close()
+    return jsonify(ok=True, wishlist_count=count)
+
+
+@shop_bp.route('/wishlist/remove', methods=['POST'])
+@login_required
+def wishlist_remove():
+    data = request.get_json(silent=True) or request.form
+    product_id = int(data.get('product_id', 0))
+
+    conn = get_db()
+    conn.execute(
+        "DELETE FROM wishlists WHERE user_id = ? AND product_id = ?",
+        (session['user_id'], product_id)
+    )
+    conn.commit()
+    count = conn.execute("SELECT COUNT(*) FROM wishlists WHERE user_id = ?",
+                         (session['user_id'],)).fetchone()[0]
+    conn.close()
+    return jsonify(ok=True, wishlist_count=count)
+
+
+# ======================================================
+#  프로필 (추천용)
+# ======================================================
+@shop_bp.route('/mypage/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    conn = get_db()
+
+    if request.method == 'POST':
+        height = request.form.get('height', type=int)
+        weight = request.form.get('weight', type=int)
+        preferred = request.form.getlist('preferred_tags')
+        preferred_str = ','.join(preferred)
+
+        conn.execute('''
+            INSERT INTO user_profiles (user_id, height, weight, preferred_tags)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(user_id)
+            DO UPDATE SET height=excluded.height,
+                          weight=excluded.weight,
+                          preferred_tags=excluded.preferred_tags,
+                          updated_at=CURRENT_TIMESTAMP
+        ''', (session['user_id'], height, weight, preferred_str))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('shop.mypage'))
+
+    # GET
+    profile = conn.execute(
+        "SELECT * FROM user_profiles WHERE user_id = ?",
+        (session['user_id'],)
+    ).fetchone()
+    all_tags = conn.execute("SELECT * FROM tags ORDER BY name").fetchall()
+    conn.close()
+    return render_template('profile.html', profile=profile, tags=all_tags)
+
+# ======================================================
+#  상품
+# ======================================================
+@shop_bp.route('/')
+def product_list():
+    conn = get_db()
+    products = conn.execute("SELECT * FROM products ORDER BY id DESC").fetchall()
+    conn.close()
+    return render_template('products.html', products=products)
+
+
+@shop_bp.route('/products/<int:product_id>')
+def product_detail(product_id):
+    conn = get_db()
+    product = conn.execute("SELECT * FROM products WHERE id = ?", (product_id,)).fetchone()
+    if product is None:
+        conn.close()
+        abort(404)
+
+    # 이 상품의 태그
+    tags = conn.execute('''
+        SELECT t.name FROM product_tags pt
+        JOIN tags t ON t.id = pt.tag_id
+        WHERE pt.product_id = ?
+    ''', (product_id,)).fetchall()
+
+    # 이 상품이 찜되었는지 (로그인 유저)
+    is_wished = False
+    if 'user_id' in session:
+        row = conn.execute(
+            "SELECT id FROM wishlists WHERE user_id = ? AND product_id = ?",
+            (session['user_id'], product_id)
+        ).fetchone()
+        is_wished = row is not None
+
+    conn.close()
+    return render_template('product_detail.html',
+                           product=product,
+                           tags=tags,
+                           is_wished=is_wished)
