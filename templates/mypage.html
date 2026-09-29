@@ -8,6 +8,7 @@
   <p>아이디: {{ user.username }}</p>
   <p>이메일: {{ user.email }}</p>
   <p>가입일: {{ user.created_at[:10] }}</p>
+  <a href="{{ url_for('shop.profile') }}" class="btn">취향 설정</a>
 </div>
 
 <h2>주문 내역</h2>
