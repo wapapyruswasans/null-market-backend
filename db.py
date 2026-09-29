@@ -122,6 +122,7 @@ def init_db():
         "style-street", "style-vintage",
         "type-shirt", "type-hoodie", "type-pants", "type-skirt",
         "type-dress", "type-jacket", "type-coat", "type-shoes", "type-bag",
+        "type-knit", "type-sweatshirt", "type-hat",              # ← 추가
         "season-spring", "season-summer", "season-fall", "season-winter", "season-all",
         "fit-oversize", "fit-slim", "fit-regular", "fit-wide",
         "gender-men", "gender-women", "gender-unisex",
