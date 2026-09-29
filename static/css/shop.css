@@ -34,3 +34,85 @@ th { background: #f5f5f5; font-weight: 600; }
 .status { display: inline-block; padding: 2px 8px; border-radius: 10px; background: #e8f4ff; color: #1a66cc; font-size: 12px; }
 .complete { text-align: center; padding: 40px 0; }
 .complete .btn { margin: 16px 6px 0; }
+/* 프로필 태그 */
+.tag-group { margin: 16px 0; }
+.tag-group h3 { font-size: 14px; margin: 8px 0; color: #555; }
+.tag-check { display: inline-block; margin: 4px 12px 4px 0; font-size: 14px; cursor: pointer; }
+.tag-check input { margin-right: 4px; }
+/* 프로필 태그 */
+.tag-group {
+  margin: 28px 0;
+  padding: 20px;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+}
+
+.tag-group h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 16px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #f0f0f0;
+  color: #111;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tag-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #f7f7f7;
+  border: 1px solid #e5e5e5;
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.tag-check:hover {
+  background: #efefef;
+}
+
+.tag-check input {
+  margin: 0;
+  cursor: pointer;
+}
+
+.tag-check:has(input:checked) {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+/* 폼 버튼 영역 */
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 24px;
+  align-items: center;
+}
+/* 폼 버튼 영역 */
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 24px;
+  align-items: center;
+}
+
+/* Flash 메시지 */
+.flash {
+  background: #e8f4ff;
+  border: 1px solid #a8d0ff;
+  color: #1a66cc;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
