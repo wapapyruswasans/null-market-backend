@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}내 취향 설정 - NULL MARKET{% endblock %}
+{% block content %}
+<h1>내 취향 설정</h1>
+<p class="muted">입력한 정보로 상품을 추천해드려요</p>
+
+<form method="post" class="form" id="profile-form">
+  <label>키 (cm)
+    <input type="number" name="height" value="{{ profile.height if profile else '' }}" required>
+  </label>
+  <label>체중 (kg)
+    <input type="number" name="weight" value="{{ profile.weight if profile else '' }}" required>
+  </label>
+
+  <h2>선호 태그</h2>
+  <p class="muted">여러 개 선택 가능</p>
+
+  {% set selected = profile.preferred_tags.split(',') if profile and profile.preferred_tags else [] %}
+
+  {% set color_order = ['color-black', 'color-white', 'color-gray', 'color-red', 'color-blue',
+                        'color-green', 'color-yellow', 'color-pink', 'color-beige'] %}
+  {% set style_order = ['style-casual', 'style-minimal', 'style-street', 'style-sporty',
+                        'style-formal', 'style-vintage'] %}
+  {% set season_order = ['season-spring', 'season-summer', 'season-fall', 'season-winter', 'season-all'] %}
+
+  <div class="tag-group">
+    <h3>🎨 색상</h3>
+    <div class="tag-list">
+      {% for name in color_order %}
+        <label class="tag-check">
+          <input type="checkbox" name="preferred_tags" value="{{ name }}"
+                 {% if name in selected %}checked{% endif %}>
+          {{ name.replace('color-', '') }}
+        </label>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="tag-group">
+    <h3>👕 스타일</h3>
+    <div class="tag-list">
+      {% for name in style_order %}
+        <label class="tag-check">
+          <input type="checkbox" name="preferred_tags" value="{{ name }}"
+                 {% if name in selected %}checked{% endif %}>
+          {{ name.replace('style-', '') }}
+        </label>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="tag-group">
+    <h3>🍂 계절</h3>
+    <div class="tag-list">
+      {% for name in season_order %}
+        <label class="tag-check">
+          <input type="checkbox" name="preferred_tags" value="{{ name }}"
+                 {% if name in selected %}checked{% endif %}>
+          {{ name.replace('season-', '') }}
+        </label>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">설정 저장</button>
+    <a href="{{ url_for('shop.mypage') }}" class="btn">← 마이페이지로</a>
+  </div>
+</form>
+
+<script>
+  document.getElementById('profile-form').addEventListener('submit', async function(e) {
+    e.preventDefault();  // 기본 제출 막기
+
+    const formData = new FormData(this);
+
+    try {
+      const res = await fetch(this.action || window.location.href, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (res.ok || res.redirected) {
+        alert('설정이 저장되었어요!');
+        location.href = "{{ url_for('shop.mypage') }}";
+      } else {
+        alert('저장에 실패했어요. 다시 시도해주세요.');
+      }
+    } catch (err) {
+      alert('네트워크 오류가 발생했어요.');
+    }
+  });
+</script>
+{% endblock %}
